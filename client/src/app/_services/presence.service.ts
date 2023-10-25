@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import { HttpTransportType, HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { ToastrService } from 'ngx-toastr';
-import { BehaviorSubject } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { BehaviorSubject, take } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import { User } from '../_models/user';
 
@@ -12,7 +11,7 @@ import { User } from '../_models/user';
 })
 export class PresenceService {
   hubUrl = environment.hubUrl;
-  private hubConnection: HubConnection;
+  private hubConnection?: HubConnection;
   private onlineUsersSource = new BehaviorSubject<string[]>([]);
   onlineUsers$ = this.onlineUsersSource.asObservable();
 
@@ -21,40 +20,41 @@ export class PresenceService {
   createHubConnection(user: User) {
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(this.hubUrl + 'presence', {
-        accessTokenFactory: () => user.token
+        accessTokenFactory: () => user.token,
+        transport: HttpTransportType.WebSockets
       })
       .withAutomaticReconnect()
-      .build()
+      .build();
 
-    this.hubConnection
-      .start()
-      .catch(error => console.log(error));
+    this.hubConnection.start().catch(error => console.log(error));
 
     this.hubConnection.on('UserIsOnline', username => {
-      this.onlineUsers$.pipe(take(1)).subscribe(usernames => {
-        this.onlineUsersSource.next([...usernames, username])
+      this.onlineUsers$.pipe(take(1)).subscribe({
+        next: usernames => this.onlineUsersSource.next([...usernames, username])
       })
     })
 
     this.hubConnection.on('UserIsOffline', username => {
-      this.onlineUsers$.pipe(take(1)).subscribe(usernames => {
-        this.onlineUsersSource.next([...usernames.filter(x => x !== username)])
+      this.onlineUsers$.pipe(take(1)).subscribe({
+        next: usernames => this.onlineUsersSource.next(usernames.filter(x => x !== username))
       })
     })
 
-    this.hubConnection.on('GetOnlineUsers', (usernames: string[]) => {
+    this.hubConnection.on('GetOnlineUsers', usernames => {
       this.onlineUsersSource.next(usernames);
     })
 
     this.hubConnection.on('NewMessageReceived', ({username, knownAs}) => {
-      this.toastr.info(knownAs + ' has sent you a new message!')
+      this.toastr.info(knownAs + ' has sent you a new message! Click me to see it')
         .onTap
         .pipe(take(1))
-        .subscribe(() => this.router.navigateByUrl('/members/' + username + '?tab=3'));
+        .subscribe({
+          next: () => this.router.navigateByUrl('/members/' + username + '?tab=Messages')
+        })
     })
   }
 
   stopHubConnection() {
-    this.hubConnection.stop().catch(error => console.log(error));
+    this.hubConnection?.stop().catch(error => console.log(error));
   }
 }

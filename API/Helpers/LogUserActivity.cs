@@ -1,9 +1,6 @@
-using System;
-using System.Threading.Tasks;
 using API.Extensions;
 using API.Interfaces;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace API.Helpers
 {
@@ -16,9 +13,10 @@ namespace API.Helpers
             if (!resultContext.HttpContext.User.Identity.IsAuthenticated) return;
 
             var userId = resultContext.HttpContext.User.GetUserId();
-            var uow = resultContext.HttpContext.RequestServices.GetService<IUnitOfWork>();
+
+            var uow = resultContext.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
             var user = await uow.UserRepository.GetUserByIdAsync(userId);
-            user.LastActive = DateTime.UtcNow;
+            user.LastActive  = DateTime.UtcNow;
             await uow.Complete();
         }
     }

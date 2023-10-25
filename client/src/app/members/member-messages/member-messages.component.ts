@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, Input, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { Message } from 'src/app/_models/message';
-import { MembersService } from 'src/app/_services/members.service';
 import { MessageService } from 'src/app/_services/message.service';
 
 @Component({
@@ -11,10 +10,9 @@ import { MessageService } from 'src/app/_services/message.service';
   styleUrls: ['./member-messages.component.css']
 })
 export class MemberMessagesComponent implements OnInit {
-  @ViewChild('messageForm') messageForm: NgForm;
-  @Input() messages: Message[];
-  @Input() username: string;
-  messageContent: string;
+  @ViewChild('messageForm') messageForm?: NgForm
+  @Input() username?: string;
+  messageContent = '';
   loading = false;
 
   constructor(public messageService: MessageService) { }
@@ -23,9 +21,10 @@ export class MemberMessagesComponent implements OnInit {
   }
 
   sendMessage() {
+    if (!this.username) return;
     this.loading = true;
     this.messageService.sendMessage(this.username, this.messageContent).then(() => {
-      this.messageForm.reset();
+      this.messageForm?.reset();
     }).finally(() => this.loading = false);
   }
 

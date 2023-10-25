@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace API.Entities
@@ -7,6 +6,7 @@ namespace API.Entities
     {
         public Group()
         {
+            
         }
 
         public Group(string name)
